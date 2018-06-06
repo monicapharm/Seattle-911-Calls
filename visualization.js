@@ -4,26 +4,21 @@
 var svg = d3
   .select("#visContainer")
   .append("svg")
-  .attr("height", 200) //can adjust size as desired
-  .attr("width", 480)
-  .style("border", "1px solid gray"); //comment out to remove border
+  .attr("height", 300) //can adjust size as desired
+  .attr("width", 480);
+// .style("border", "1px solid gray"); //comment out to remove border
 
 //the SVG element to add visual content to
 d3.selectAll(".plot")
   .append("svg")
   .attr("height", 480) //can adjust size as desired
-  .attr("width", 400)
-  .style("border", "1px solid gray"); //comment out to remove border
+  .attr("width", 400);
 
 var svg2 = d3
-  .select("#visContainer2")
+  .select("#typeplot")
   .append("svg")
-  .attr("height", 700) //can adjust size as desired
-  .attr("width", 520)
-  .style("border", "1px solid gray");
-
-console.log(svg2);
-// var svg3 =
+  .attr("height", 900) //can adjust size as desired
+  .attr("width", 520);
 
 /* Your script goes here */
 
@@ -43,11 +38,11 @@ function get_API_URI() {
     "https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20between%20%27" +
     datePast +
     "T" +
-    '00:00:00' +
+    "00:00:00" +
     "%27%20and%20%27" +
     datePast +
     "T" +
-    '23:59:59' +
+    "23:59:59" +
     "%27"
   );
 }
@@ -83,30 +78,6 @@ L.tileLayer(
   }
 ).addTo(mymap);
 
-// Render the map on screen
-function renderMap(data) {
-  // `data` is an array of objects
-  // Add each object to the map if `latitude` and `longitude` are available
-  // console.log(data);
-  data.forEach(function(item) {
-    if (item.latitude && item.longitude) {
-      var marker = L.marker([item.latitude, item.longitude]).addTo(mymap);
-      var day = moment(item.datetime);
-      marker
-        .bindPopup(
-          "<b>" +
-            item.type +
-            "</b>" +
-            "<br>" +
-            day.fromNow() +
-            "<br>" +
-            item.address
-        )
-        .openPopup();
-    }
-  });
-}
-
 //This function takes in latitude and longitude of two location and returns the distance between them (in km)
 function calcCrow(lat1, lon1, lat2, lon2) {
   var R = 6371; // km
@@ -129,7 +100,7 @@ function toRad(Value) {
 //Future generated markers would be added into a marker group
 var markerGroup = L.layerGroup().addTo(mymap);
 
-// Filter data given the distance to the target's latitude and longitude, and visualize filtered markers on map
+// Filter data given the distance to the target's latitude and longitude, and visualize filtered markers on map, and made plots
 function filterData(data, targetLat, targetLon, dist) {
   markerGroup.clearLayers();
   var filteredData = [];
@@ -166,15 +137,18 @@ function filterData(data, targetLat, targetLon, dist) {
   //console.log(filteredData);
   plotType(filteredData);
   plotByHour(filteredData);
-
 }
 
 // load the lasted data and filtered data
 async function load911Data(uri, targetLat, targetLon, dist) {
-  d3.select("#subtitle").append('h4').text('Please wait while fetching and calculating data');
+  d3.select("#subtitle")
+    .append("h4")
+    .text("Please wait while fetching and calculating data");
   var calls = await d3.json(uri);
   filterData(calls, targetLat, targetLon, dist);
-  d3.select("#subtitle").text('There is a 6-hour delay for the API to update incidences, so the graphs shown are based on yesterday');
+  d3.select("#subtitle").text(
+    "There is a 6-hour delay for the API to update incidences, so the graphs shown are based on yesterday"
+  );
 }
 
 // Add the circle that highlights the chosen area
@@ -221,29 +195,12 @@ button_south.on("click", function() {
   addCircle(SOUTH_LAT, SOUTH_LON, 2000);
 });
 
-// incident type analysis
-
-var colorScale = d3
-  .scaleLinear()
-  .domain([0, 150])
-  .range(["#73B6E6", "#267ECA"]);
-
-var calWidth = d3
-  .scaleLinear()
-  .domain([0, 150]) // sleep interval
-  .range([0, 480]); // pixel interval
-console.log(calWidth(12));
-
-// axis builder function
-var xAxisFunc = d3.axisTop(calWidth).ticks(10, ".0f"); // add axis on the top
-var axisGroup = svg2
-  .append("g")
-  .attr("transform", "translate(20,30)")
-  .call(xAxisFunc);
-
-svg2 = svg2.append("g").attr("transform", "translate(20,30)");
+/* incident type analysis */
 
 function plotType(calls) {
+  d3.select("#number").text("# of Calls");
+
+  // extract data with incident type and frequencies
   let uniqueTypes = new Set();
   calls.forEach(function(item) {
     uniqueTypes.add(item.type);
@@ -266,6 +223,35 @@ function plotType(calls) {
     }
   }
 
+  // axis builder function
+  var freqMax = d3.max(summary, function(d) {
+    return d.freq;
+  });
+  var freqMin = d3.min(summary, function(d) {
+    return d.freq;
+  });
+  var calWidth = d3
+    .scaleLinear()
+    .domain([0, freqMax]) // sleep interval
+    .range([0, 480]); // pixel interval
+  var xAxisFunc = d3.axisTop(calWidth).ticks(10, ".0f"); // add axis on the top
+
+  // color scale
+  var colorScale = d3
+    .scaleLinear()
+    .domain([freqMin, freqMax])
+    .range(["#C8DEEC", "#227BB7"]);
+
+  var axisGroup = svg2
+    .append("g")
+    .attr("class", "xAxis")
+    .attr("transform", "translate(20,30)")
+    .call(xAxisFunc);
+  svg2
+    .append("text")
+    .attr("transform", "translate(20, 50)")
+    .text("# of calls");
+
   var rects = svg2.selectAll("rect").data(summary, function(d) {
     return d.type;
   });
@@ -282,15 +268,15 @@ function plotType(calls) {
   present
     .transition()
     .duration(500)
-    .attr("x", 0)
+    .attr("x", 20)
     .attr("y", function(d, i) {
       console.log(d);
-      return 20 + i * 40;
+      return 20 + (i + 0.5) * 30;
     })
     .attr("width", function(d) {
       return calWidth(d.freq);
     })
-    .attr("height", 30);
+    .attr("height", 26);
 
   rects
     .exit()
@@ -300,12 +286,13 @@ function plotType(calls) {
     .remove();
 
   // update the text
-  var texts = svg2.selectAll("text").data(summary, function(d) {
+  var texts = svg2.selectAll(".types").data(summary, function(d) {
     return d.type;
   });
   present = texts
     .enter()
     .append("text")
+    .attr("class", "types")
     .merge(texts);
 
   present
@@ -315,10 +302,10 @@ function plotType(calls) {
       return d.type + ": " + d.freq;
     })
     .attr("fill", "black")
-    .attr("font-size", "15")
+    .attr("font-size", "12")
     .attr("x", 120)
     .attr("y", function(d, i) {
-      return 40 + i * 40;
+      return 38 + (i + 0.5) * 30;
     });
 
   texts.exit().remove();
@@ -326,114 +313,158 @@ function plotType(calls) {
   svg2.call(xAxisFunc);
 }
 
+/*display incidents number within 24 hour in last day */
 
-
-
-function plotByHour(rawData){
+function plotByHour(rawData) {
   //set up chart
-  var margin = {top: 10, right: 10, bottom: 60, left: 50};
+  var margin = { top: 10, right: 10, bottom: 60, left: 50 };
   var width = 600;
   var height = 400;
   //clear
-  var chart = d3.select(".chart").html('');
-  var chart = d3.select(".chart")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height + margin.top + margin.bottom)
-          .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  var chart = d3.select(".chart").html("");
+  var chart = d3
+    .select(".chart")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   //add labels
   chart
     .append("text")
-    .attr("transform", "translate(-35," +  (height+margin.bottom)/2 + ") rotate(-90)")
+    .attr(
+      "transform",
+      "translate(-35," + (height + margin.bottom) / 2 + ") rotate(-90)"
+    )
     .text("# of calls");
   chart
     .append("text")
-    .attr("transform", "translate(" + (width/2) + "," + (height + margin.bottom - 5) + ")")
+    .attr(
+      "transform",
+      "translate(" + width / 2 + "," + (height + margin.bottom - 5) + ")"
+    )
     .text("Time(hour)");
   //Scalars
-  var xScalar = d3.scaleBand()
-        .range([0, width]); 
-  var yScalar = d3.scaleLinear()
-          .range([height, 0]);
+  var xScalar = d3.scaleBand().range([0, width]);
+  var yScalar = d3.scaleLinear().range([height, 0]);
   //Axes
   var xAxis = d3.axisBottom(xScalar);
   var yAxis = d3.axisLeft(yScalar);
   //set up axes
   //left axis
-  chart.append("g")
-  .attr("class", "y axis")
-  .call(yAxis)
+  chart
+    .append("g")
+    .attr("class", "y axis")
+    .call(yAxis);
   //bottom axis
-  chart.append("g")
-  .attr("class", "xAxis")
-  .attr("transform", "translate(0," + height + ")")
-  .call(xAxis)
-  .selectAll("text")
-  .style("text-anchor", "end")
-  .attr("dx", "-.8em")
-  .attr("dy", ".15em")
-  .attr("transform", function(d){
-    return "rotate(-65)";
-  });
-  // construct empty obj
-  var countByHour={};
-  for (var i=0;i<24;i++){
-    countByHour[i]=0;
-  }
-  // count by hour
-  for(var i = 0; i < rawData.length; i++){
-    var hour = new Date(rawData[i]['datetime']).getHours();
-    countByHour[hour]++;
-  }
-  // transform obj to array for faster visulization
-  var data=[];
-  for (var i=0;i<24;i++){
-    data.push({'hour':i+':00','count':countByHour[i]});
-  }
-  // subtitle
-  var today=new Date();
-  var datetime=today.getFullYear()+'-'+(today.getMonth()+1)+'-'+(today.getDate()-1);
-  d3.select('#timeNow').text('Based on: '+datetime);
-  //set domain for the x axis
-  xScalar.domain(data.map(function(d){ return d.hour;}) );
-  //set domain for y axis
-  yScalar.domain( [0, d3.max(data, function(d){ return +d.count; })] );
-
-  //get the width of each bar 
-  var barWidth = width / data.length;
-  //select all bars on the graph, take them out, and exit the previous data set. 
-  //then you can add/enter the new data set
-  var bars = chart.selectAll(".bar")
-  
-          .remove()
-          .exit()
-          .data(data)		
-  //now actually give each rectangle the corresponding data
-  bars.enter()
-    .append("rect")
-         
-    .attr("class", "bar")
-    .attr("x", function(d, i){ return i * barWidth + 1 })
-    .attr("y", function(d){ return yScalar(d.count); })
-    .transition()
-    .duration(1500)
-    .attr("height", function(d){ return height - yScalar(d.count); })
-    .attr("width", barWidth - 1)
-    .attr("fill", "rgb(51,119,225)");
-  
-  //left axis
-  chart.select('.y')
-      .call(yAxis)
-  //bottom axis
-  chart.select('.xAxis')
+  chart
+    .append("g")
+    .attr("class", "xAxis")
     .attr("transform", "translate(0," + height + ")")
     .call(xAxis)
     .selectAll("text")
-      .style("text-anchor", "end")
-      .attr("dx", "-.8em")
-      .attr("dy", ".15em")
-      .attr("transform", function(d){
-        return "rotate(-65)";
-      });
-        
-  }//end bar chart 2
+    .style("text-anchor", "end")
+    .attr("dx", "-.8em")
+    .attr("dy", ".15em")
+    .attr("transform", function(d) {
+      return "rotate(-65)";
+    });
+  // construct empty obj
+  var countByHour = {};
+  for (var i = 0; i < 24; i++) {
+    countByHour[i] = 0;
+  }
+  // count by hour
+  for (var i = 0; i < rawData.length; i++) {
+    var hour = new Date(rawData[i]["datetime"]).getHours();
+    countByHour[hour]++;
+  }
+  // transform obj to array for faster visulization
+  var data = [];
+  for (var i = 0; i < 24; i++) {
+    data.push({ hour: i + ":00", count: countByHour[i] });
+  }
+  // subtitle
+  var today = new Date();
+  var datetime =
+    today.getFullYear() +
+    "-" +
+    (today.getMonth() + 1) +
+    "-" +
+    (today.getDate() - 1);
+  d3.select("#timeNow").text("Based on: " + datetime);
+  //set domain for the x axis
+  xScalar.domain(
+    data.map(function(d) {
+      return d.hour;
+    })
+  );
+  //set domain for y axis
+  yScalar.domain([
+    0,
+    d3.max(data, function(d) {
+      return +d.count;
+    })
+  ]);
+
+  //get the width of each bar
+  var barWidth = width / data.length;
+  //select all bars on the graph, take them out, and exit the previous data set.
+  //then you can add/enter the new data set
+  var bars = chart
+    .selectAll(".bar")
+
+    .remove()
+    .exit()
+    .data(data);
+
+  // color scale
+  var colorScale = d3
+    .scaleLinear()
+    .domain([
+      d3.min(data, function(d) {
+        return yScalar(d.count);
+      }),
+      d3.max(data, function(d) {
+        return yScalar(d.count);
+      })
+    ])
+    .range(["#C8DEEC", "#227BB7"]);
+
+  //now actually give each rectangle the corresponding data
+  bars
+    .enter()
+    .append("rect")
+
+    .attr("class", "bar")
+    .attr("x", function(d, i) {
+      return i * barWidth + 1;
+    })
+    .attr("y", function(d) {
+      return yScalar(d.count);
+    })
+    .transition()
+    .duration(1500)
+    .attr("height", function(d) {
+      return height - yScalar(d.count);
+    })
+    .attr("width", barWidth - 1)
+    // .attr("fill", "rgb(51,119,225)");
+    .attr("fill", function(d) {
+      return colorScale(height - yScalar(d.count));
+    });
+
+  //left axis
+  chart.select(".y").call(yAxis);
+  //bottom axis
+  chart
+    .select(".xAxis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .selectAll("text")
+    .style("text-anchor", "end")
+    .attr("dx", "-.8em")
+    .attr("dy", ".15em")
+    .attr("transform", function(d) {
+      return "rotate(-65)";
+    });
+} //end bar chart 2
