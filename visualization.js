@@ -4,7 +4,7 @@
 var svg = d3
   .select("#visContainer")
   .append("svg")
-  .attr("height", 480) //can adjust size as desired
+  .attr("height", 280) //can adjust size as desired
   .attr("width", 480);
 // .style("border", "1px solid gray"); //comment out to remove border
 
@@ -104,7 +104,7 @@ var markerGroup = L.layerGroup().addTo(mymap);
 function filterData(data, targetLat, targetLon, dist) {
   markerGroup.clearLayers();
   var filteredData = [];
-  data.forEach(function(item) {
+  data.forEach(function (item) {
     if (item.latitude && item.longitude) {
       if (
         calcCrow(item.latitude, item.longitude, targetLat, targetLon) <= dist
@@ -124,12 +124,12 @@ function filterData(data, targetLat, targetLon, dist) {
       marker
         .bindPopup(
           "<b>" +
-            item.type +
-            "</b>" +
-            "<br>" +
-            day.fromNow() +
-            "<br>" +
-            item.address
+          item.type +
+          "</b>" +
+          "<br>" +
+          day.fromNow() +
+          "<br>" +
+          item.address
         )
         .openPopup();
     }
@@ -166,35 +166,35 @@ function addCircle(centerLat, centerLon, rad) {
 }
 
 var button_city = d3.select("#city");
-button_city.on("click", function() {
+button_city.on("click", function () {
   mymap.removeLayer(circle);
   load911Data(seattle911API, DOWNTOWN_LAT, DOWNTOWN_LON, 20);
   mymap.setView([DOWNTOWN_LAT, DOWNTOWN_LON], 11.5);
 });
 
 var button_uw = d3.select("#uw");
-button_uw.on("click", function() {
+button_uw.on("click", function () {
   load911Data(seattle911API, RED_SQUARE_LAT, RED_SQUARE_LON, 3);
   addCircle(RED_SQUARE_LAT, RED_SQUARE_LON, 1500);
   mymap.setView([RED_SQUARE_LAT, RED_SQUARE_LON], 11.5);
 });
 
 var button_dt = d3.select("#downtown");
-button_dt.on("click", function() {
+button_dt.on("click", function () {
   load911Data(seattle911API, DOWNTOWN_LAT, DOWNTOWN_LON, 2.5);
   addCircle(DOWNTOWN_LAT, DOWNTOWN_LON, 1000);
   mymap.setView([DOWNTOWN_LAT, DOWNTOWN_LON], 11.5);
 });
 
 var button_north = d3.select("#north");
-button_north.on("click", function() {
+button_north.on("click", function () {
   load911Data(seattle911API, NORTH_LAT, NORTH_LON, 4);
   addCircle(NORTH_LAT, NORTH_LON, 2000);
   mymap.setView([NORTH_LAT, NORTH_LON], 11);
 });
 
 var button_south = d3.select("#south");
-button_south.on("click", function() {
+button_south.on("click", function () {
   load911Data(seattle911API, SOUTH_LAT, SOUTH_LON, 5);
   addCircle(SOUTH_LAT, SOUTH_LON, 2000);
   mymap.setView([SOUTH_LAT, SOUTH_LON], 11);
@@ -207,11 +207,11 @@ function plotType(calls) {
 
   // extract data with incident type and frequencies
   let uniqueTypes = new Set();
-  calls.forEach(function(item) {
+  calls.forEach(function (item) {
     uniqueTypes.add(item.type);
   });
   var summary = [];
-  uniqueTypes.forEach(function(i) {
+  uniqueTypes.forEach(function (i) {
     var dict = {
       type: i,
       freq: 0
@@ -229,10 +229,10 @@ function plotType(calls) {
   }
 
   // axis builder function
-  var freqMax = d3.max(summary, function(d) {
+  var freqMax = d3.max(summary, function (d) {
     return d.freq;
   });
-  var freqMin = d3.min(summary, function(d) {
+  var freqMin = d3.min(summary, function (d) {
     return d.freq;
   });
   var calWidth = d3
@@ -257,7 +257,7 @@ function plotType(calls) {
     .attr("transform", "translate(20, 50)")
     .text("# of calls");
 
-  var rects = svg2.selectAll("rect").data(summary, function(d) {
+  var rects = svg2.selectAll("rect").data(summary, function (d) {
     return d.type;
   });
 
@@ -265,7 +265,7 @@ function plotType(calls) {
     .enter()
     .append("rect")
     .attr("width", 0)
-    .attr("fill", function(d) {
+    .attr("fill", function (d) {
       return colorScale(d.freq);
     })
     .merge(rects);
@@ -274,11 +274,11 @@ function plotType(calls) {
     .transition()
     .duration(500)
     .attr("x", 20)
-    .attr("y", function(d, i) {
+    .attr("y", function (d, i) {
       console.log(d);
       return 20 + (i + 0.5) * 30;
     })
-    .attr("width", function(d) {
+    .attr("width", function (d) {
       return calWidth(d.freq);
     })
     .attr("height", 26);
@@ -291,7 +291,7 @@ function plotType(calls) {
     .remove();
 
   // update the text
-  var texts = svg2.selectAll(".types").data(summary, function(d) {
+  var texts = svg2.selectAll(".types").data(summary, function (d) {
     return d.type;
   });
   present = texts
@@ -303,13 +303,13 @@ function plotType(calls) {
   present
     .transition()
     .duration(500)
-    .text(function(d) {
+    .text(function (d) {
       return d.type + ": " + d.freq;
     })
     .attr("fill", "black")
     .attr("font-size", "12")
     .attr("x", 120)
-    .attr("y", function(d, i) {
+    .attr("y", function (d, i) {
       return 38 + (i + 0.5) * 30;
     });
 
@@ -370,7 +370,7 @@ function plotByHour(rawData) {
     .style("text-anchor", "end")
     .attr("dx", "-.8em")
     .attr("dy", ".15em")
-    .attr("transform", function(d) {
+    .attr("transform", function (d) {
       return "rotate(-65)";
     });
   // construct empty obj
@@ -399,14 +399,14 @@ function plotByHour(rawData) {
   d3.select("#timeNow").text("Based on: " + datetime);
   //set domain for the x axis
   xScalar.domain(
-    data.map(function(d) {
+    data.map(function (d) {
       return d.hour;
     })
   );
   //set domain for y axis
   yScalar.domain([
     0,
-    d3.max(data, function(d) {
+    d3.max(data, function (d) {
       return +d.count;
     })
   ]);
@@ -426,10 +426,10 @@ function plotByHour(rawData) {
   var colorScale = d3
     .scaleLinear()
     .domain([
-      d3.min(data, function(d) {
+      d3.min(data, function (d) {
         return yScalar(d.count);
       }),
-      d3.max(data, function(d) {
+      d3.max(data, function (d) {
         return yScalar(d.count);
       })
     ])
@@ -441,20 +441,20 @@ function plotByHour(rawData) {
     .append("rect")
 
     .attr("class", "bar")
-    .attr("x", function(d, i) {
+    .attr("x", function (d, i) {
       return i * barWidth + 1;
     })
-    .attr("y", function(d) {
+    .attr("y", function (d) {
       return yScalar(d.count);
     })
     .transition()
     .duration(1500)
-    .attr("height", function(d) {
+    .attr("height", function (d) {
       return height - yScalar(d.count);
     })
     .attr("width", barWidth - 1)
     // .attr("fill", "rgb(51,119,225)");
-    .attr("fill", function(d) {
+    .attr("fill", function (d) {
       return colorScale(height - yScalar(d.count));
     });
 
@@ -469,7 +469,7 @@ function plotByHour(rawData) {
     .style("text-anchor", "end")
     .attr("dx", "-.8em")
     .attr("dy", ".15em")
-    .attr("transform", function(d) {
+    .attr("transform", function (d) {
       return "rotate(-65)";
     });
 } //end bar chart 2
