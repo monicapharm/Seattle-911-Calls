@@ -24,8 +24,9 @@
 <body>
     <div class="container map">
         <!-- content -->
-        <h1>SEATTLE 911 CALLS MAP</h1>
+        <h1>SEATTLE 911 CALLS MAP (Past day)</h1>
         <p class="lead">ZHEHAO JIN, LIUQING MA</p>
+        <p id='subtitle'>There is a 6-hour delay for the API to update incidences, so the graphs shown are based on yesterday. </p>
 
         <!-- more html content can go here; e.g., any control buttons -->
         <button type="button" class="btn btn-primary" id="city">Seattle City</button>
@@ -57,10 +58,13 @@
 
         <div class="container plot2">
             <!-- content -->
-            <h1>Latest 24h</h1>
-            <div id="visContainer3"></div>
+            <h1>By Hour</h1>
+            <p style="white-space:nowrap" id="timeNow"></p>
+            <svg class='chart'>
+            </svg>
+            
             <!-- A container to hold the visualization -->
-
+                
             <!-- more html content can go here, e.g., further details or explanations -->
 
         </div>
