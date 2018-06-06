@@ -15,21 +15,45 @@ d3.selectAll(".plot")
   .attr("width", 400)
   .style("border", "1px solid gray"); //comment out to remove border
 
-// var svg2 =
+var svg2 = d3
+  .select("#visContainer2")
+  .append("svg")
+  .attr("height", 700) //can adjust size as desired
+  .attr("width", 520)
+  .style("border", "1px solid gray")
+  .append("g")
+  .attr("transform", "translate(20,40)");
 
+console.log(svg2);
 // var svg3 =
 
 /* Your script goes here */
 
-function get_API_URI(){
+function get_API_URI() {
   // get current date and time
-  var today = new Date()
-  var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-  var datePast = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+(today.getDate()-1)
-  var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+  var today = new Date();
+  var date =
+    today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
+  var datePast =
+    today.getFullYear() +
+    "-" +
+    (today.getMonth() + 1) +
+    "-" +
+    (today.getDate() - 1);
+  var time =
+    today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
   // construct the API URI
-  return 'https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20between%20%27'+datePast+'T'+time+'%27%20and%20%27'+date+'T'+time+'%27';
-
+  return (
+    "https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20between%20%27" +
+    datePast +
+    "T" +
+    time +
+    "%27%20and%20%27" +
+    date +
+    "T" +
+    time +
+    "%27"
+  );
 }
 var seattle911API = get_API_URI();
 
@@ -111,11 +135,13 @@ var markerGroup = L.layerGroup().addTo(mymap);
 // Filter data given the distance to the target's latitude and longitude, and visualize filtered markers on map
 function filterData(data, targetLat, targetLon, dist) {
   markerGroup.clearLayers();
+  var filteredData = [];
   data.forEach(function(item) {
     if (item.latitude && item.longitude) {
       if (
         calcCrow(item.latitude, item.longitude, targetLat, targetLon) <= dist
       ) {
+        filteredData.push(item);
         var marker = L.marker([item.latitude, item.longitude])
           .addTo(markerGroup)
           .addTo(mymap);
@@ -140,6 +166,8 @@ function filterData(data, targetLat, targetLon, dist) {
         .openPopup();
     }
   });
+  console.log(filteredData);
+  plotType(filteredData);
 }
 
 // load the lasted data and filtered data
@@ -191,3 +219,102 @@ button_south.on("click", function() {
   load911Data(seattle911API, SOUTH_LAT, SOUTH_LON, 5);
   addCircle(SOUTH_LAT, SOUTH_LON, 2000);
 });
+
+// incident type analysis
+
+var colorScale = d3
+  .scaleLinear()
+  .domain([0, 100])
+  .range(["#73B6E6", "#267ECA"]);
+
+var calWidth = d3
+  .scaleLinear()
+  .domain([0, 100]) // sleep interval
+  .range([0, 480]); // pixel interval
+console.log(calWidth(12));
+
+// axis builder function
+var xAxisFunc = d3.axisTop(calWidth); // add axis on the top
+
+var axisGroup = svg2.call(xAxisFunc.ticks(10, ".0f"));
+
+function plotType(calls) {
+  let uniqueTypes = new Set();
+  calls.forEach(function(item) {
+    uniqueTypes.add(item.type);
+  });
+  var summary = [];
+  uniqueTypes.forEach(function(i) {
+    var dict = {
+      type: i,
+      freq: 0
+    };
+    summary.push(dict);
+  });
+
+  for (var i = 0; i < calls.length; i++) {
+    var curtType = calls[i].type;
+    for (var j = 0; j < summary.length; j++) {
+      if (summary[j]["type"] == curtType) {
+        summary[j]["freq"] = summary[j]["freq"] + 1;
+      }
+    }
+  }
+
+  var rects = svg2.selectAll("rect").data(summary, function(d) {
+    return d.type;
+  });
+
+  var present = rects
+    .enter()
+    .append("rect")
+    .attr("width", 0)
+    .attr("fill", function(d) {
+      return colorScale(d.freq);
+    })
+    .merge(rects);
+
+  present
+    .transition()
+    .duration(500)
+    .attr("x", 0)
+    .attr("y", function(d, i) {
+      console.log(d);
+      return 20 + i * 40;
+    })
+    .attr("width", function(d) {
+      return 10 * d.freq;
+    })
+    .attr("height", 30);
+
+  rects
+    .exit()
+    .transition()
+    .duration(500)
+    .attr("width", 0)
+    .remove();
+
+  // update the text
+  var texts = svg2.selectAll("text").data(summary, function(d) {
+    return d.type;
+  });
+  present = texts
+    .enter()
+    .append("text")
+    .merge(texts);
+
+  present
+    .transition()
+    .duration(500)
+    .text(function(d) {
+      return d.type + ": " + d.freq;
+    })
+    .attr("fill", "black")
+    .attr("font-size", "15")
+    .attr("x", 100)
+    .attr("y", function(d, i) {
+      return 40 + i * 40;
+    });
+
+  texts.exit().remove();
+}
