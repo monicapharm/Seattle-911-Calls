@@ -20,8 +20,18 @@ d3.selectAll(".plot")
 // var svg3 =
 
 /* Your script goes here */
-const seattle911API =
-  "https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20is%20not%20null&$order=datetime%20desc&$limit=100";
+
+function get_API_URI(){
+  // get current date and time
+  var today = new Date()
+  var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+  var datePast = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+(today.getDate()-1)
+  var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+  // construct the API URI
+  return 'https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20between%20%27'+datePast+'T'+time+'%27%20and%20%27'+date+'T'+time+'%27';
+
+}
+var seattle911API = get_API_URI();
 
 // The geo location information of four main areas' center
 const RED_SQUARE_LAT = 47.656115;
