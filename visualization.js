@@ -4,8 +4,8 @@
 var svg = d3
   .select("#visContainer")
   .append("svg")
-  .attr("height", 780) //can adjust size as desired
-  .attr("width", 600)
+  .attr("height", 200) //can adjust size as desired
+  .attr("width", 480)
   .style("border", "1px solid gray"); //comment out to remove border
 
 //the SVG element to add visual content to
@@ -30,30 +30,29 @@ console.log(svg2);
 function get_API_URI() {
   // get current date and time
   var today = new Date();
-  var date =
-    today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
+  //var date =today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
   var datePast =
     today.getFullYear() +
     "-" +
     (today.getMonth() + 1) +
     "-" +
     (today.getDate() - 1);
-  var time =
-    today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+  //var time =today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
   // construct the API URI
   return (
     "https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20between%20%27" +
     datePast +
     "T" +
-    time +
+    '00:00:00' +
     "%27%20and%20%27" +
-    date +
+    datePast +
     "T" +
-    time +
+    '23:59:59' +
     "%27"
   );
 }
 var seattle911API = get_API_URI();
+//console.log(seattle911API)
 
 // The geo location information of four main areas' center
 const RED_SQUARE_LAT = 47.656115;
@@ -164,14 +163,18 @@ function filterData(data, targetLat, targetLon, dist) {
         .openPopup();
     }
   });
-  console.log(filteredData);
+  //console.log(filteredData);
   plotType(filteredData);
+  plotByHour(filteredData);
+
 }
 
 // load the lasted data and filtered data
 async function load911Data(uri, targetLat, targetLon, dist) {
+  d3.select("#subtitle").append('h4').text('Please wait while fetching and calculating data');
   var calls = await d3.json(uri);
   filterData(calls, targetLat, targetLon, dist);
+  d3.select("#subtitle").text('There is a 6-hour delay for the API to update incidences, so the graphs shown are based on yesterday');
 }
 
 // Add the circle that highlights the chosen area
@@ -322,3 +325,115 @@ function plotType(calls) {
 
   svg2.call(xAxisFunc);
 }
+
+
+
+
+function plotByHour(rawData){
+  //set up chart
+  var margin = {top: 10, right: 10, bottom: 60, left: 50};
+  var width = 600;
+  var height = 400;
+  //clear
+  var chart = d3.select(".chart").html('');
+  var chart = d3.select(".chart")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  //add labels
+  chart
+    .append("text")
+    .attr("transform", "translate(-35," +  (height+margin.bottom)/2 + ") rotate(-90)")
+    .text("# of calls");
+  chart
+    .append("text")
+    .attr("transform", "translate(" + (width/2) + "," + (height + margin.bottom - 5) + ")")
+    .text("Time(hour)");
+  //Scalars
+  var xScalar = d3.scaleBand()
+        .range([0, width]); 
+  var yScalar = d3.scaleLinear()
+          .range([height, 0]);
+  //Axes
+  var xAxis = d3.axisBottom(xScalar);
+  var yAxis = d3.axisLeft(yScalar);
+  //set up axes
+  //left axis
+  chart.append("g")
+  .attr("class", "y axis")
+  .call(yAxis)
+  //bottom axis
+  chart.append("g")
+  .attr("class", "xAxis")
+  .attr("transform", "translate(0," + height + ")")
+  .call(xAxis)
+  .selectAll("text")
+  .style("text-anchor", "end")
+  .attr("dx", "-.8em")
+  .attr("dy", ".15em")
+  .attr("transform", function(d){
+    return "rotate(-65)";
+  });
+  // construct empty obj
+  var countByHour={};
+  for (var i=0;i<24;i++){
+    countByHour[i]=0;
+  }
+  // count by hour
+  for(var i = 0; i < rawData.length; i++){
+    var hour = new Date(rawData[i]['datetime']).getHours();
+    countByHour[hour]++;
+  }
+  // transform obj to array for faster visulization
+  var data=[];
+  for (var i=0;i<24;i++){
+    data.push({'hour':i+':00','count':countByHour[i]});
+  }
+  // subtitle
+  var today=new Date();
+  var datetime=today.getFullYear()+'-'+(today.getMonth()+1)+'-'+(today.getDate()-1);
+  d3.select('#timeNow').text('Based on: '+datetime);
+  //set domain for the x axis
+  xScalar.domain(data.map(function(d){ return d.hour;}) );
+  //set domain for y axis
+  yScalar.domain( [0, d3.max(data, function(d){ return +d.count; })] );
+
+  //get the width of each bar 
+  var barWidth = width / data.length;
+  //select all bars on the graph, take them out, and exit the previous data set. 
+  //then you can add/enter the new data set
+  var bars = chart.selectAll(".bar")
+  
+          .remove()
+          .exit()
+          .data(data)		
+  //now actually give each rectangle the corresponding data
+  bars.enter()
+    .append("rect")
+         
+    .attr("class", "bar")
+    .attr("x", function(d, i){ return i * barWidth + 1 })
+    .attr("y", function(d){ return yScalar(d.count); })
+    .transition()
+    .duration(1500)
+    .attr("height", function(d){ return height - yScalar(d.count); })
+    .attr("width", barWidth - 1)
+    .attr("fill", "rgb(51,119,225)");
+  
+  //left axis
+  chart.select('.y')
+      .call(yAxis)
+  //bottom axis
+  chart.select('.xAxis')
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("dx", "-.8em")
+      .attr("dy", ".15em")
+      .attr("transform", function(d){
+        return "rotate(-65)";
+      });
+        
+  }//end bar chart 2
