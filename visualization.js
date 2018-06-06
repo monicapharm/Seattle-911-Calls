@@ -20,9 +20,7 @@ var svg2 = d3
   .append("svg")
   .attr("height", 700) //can adjust size as desired
   .attr("width", 520)
-  .style("border", "1px solid gray")
-  .append("g")
-  .attr("transform", "translate(20,40)");
+  .style("border", "1px solid gray");
 
 console.log(svg2);
 // var svg3 =
@@ -224,19 +222,23 @@ button_south.on("click", function() {
 
 var colorScale = d3
   .scaleLinear()
-  .domain([0, 100])
+  .domain([0, 150])
   .range(["#73B6E6", "#267ECA"]);
 
 var calWidth = d3
   .scaleLinear()
-  .domain([0, 100]) // sleep interval
+  .domain([0, 150]) // sleep interval
   .range([0, 480]); // pixel interval
 console.log(calWidth(12));
 
 // axis builder function
-var xAxisFunc = d3.axisTop(calWidth); // add axis on the top
+var xAxisFunc = d3.axisTop(calWidth).ticks(10, ".0f"); // add axis on the top
+var axisGroup = svg2
+  .append("g")
+  .attr("transform", "translate(20,30)")
+  .call(xAxisFunc);
 
-var axisGroup = svg2.call(xAxisFunc.ticks(10, ".0f"));
+svg2 = svg2.append("g").attr("transform", "translate(20,30)");
 
 function plotType(calls) {
   let uniqueTypes = new Set();
@@ -283,7 +285,7 @@ function plotType(calls) {
       return 20 + i * 40;
     })
     .attr("width", function(d) {
-      return 10 * d.freq;
+      return calWidth(d.freq);
     })
     .attr("height", 30);
 
@@ -311,10 +313,12 @@ function plotType(calls) {
     })
     .attr("fill", "black")
     .attr("font-size", "15")
-    .attr("x", 100)
+    .attr("x", 120)
     .attr("y", function(d, i) {
       return 40 + i * 40;
     });
 
   texts.exit().remove();
+
+  svg2.call(xAxisFunc);
 }
