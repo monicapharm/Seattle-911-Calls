@@ -4,7 +4,7 @@
 var svg = d3
   .select("#visContainer")
   .append("svg")
-  .attr("height", 280) //can adjust size as desired
+  .attr("height", 480) //can adjust size as desired
   .attr("width", 480);
 // .style("border", "1px solid gray"); //comment out to remove border
 
