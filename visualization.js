@@ -9,20 +9,35 @@ var svg = d3
   .style("border", "1px solid gray"); //comment out to remove border
 
 //the SVG element to add visual content to
-var svg2 = d3
-  .select("#visContainer2")
+d3.selectAll(".plot")
   .append("svg")
   .attr("height", 480) //can adjust size as desired
-  .attr("width", 600)
+  .attr("width", 400)
   .style("border", "1px solid gray"); //comment out to remove border
 
-/* Your script goes here */
+// var svg2 =
 
+// var svg3 =
+
+/* Your script goes here */
 const seattle911API =
-  "https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20is%20not%20null&$order=datetime%20desc&$limit=50";
+  "https://data.seattle.gov/resource/grwu-wqtk.json?$where=datetime%20is%20not%20null&$order=datetime%20desc&$limit=100";
+
+// The geo location information of four main areas' center
+const RED_SQUARE_LAT = 47.656115;
+const RED_SQUARE_LON = -122.309416;
+
+const DOWNTOWN_LAT = 47.607184;
+const DOWNTOWN_LON = -122.332302;
+
+const NORTH_LAT = 47.700265;
+const NORTH_LON = -122.333592;
+
+const SOUTH_LAT = 47.543075;
+const SOUTH_LON = -122.326037;
 
 // Create the map object, set the view and zoom
-const mymap = L.map("visContainer").setView([47.604311, -122.331734], 11.5);
+var mymap = L.map("visContainer").setView([47.604311, -122.331734], 11.5);
 
 // Add the background tiles to the map
 L.tileLayer(
@@ -61,13 +76,108 @@ function renderMap(data) {
   });
 }
 
-async function load911Data(uri) {
+//This function takes in latitude and longitude of two location and returns the distance between them (in km)
+function calcCrow(lat1, lon1, lat2, lon2) {
+  var R = 6371; // km
+  var dLat = toRad(lat2 - lat1);
+  var dLon = toRad(lon2 - lon1);
+  var lat1 = toRad(lat1);
+  var lat2 = toRad(lat2);
+  var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c;
+  return d;
+}
+// Converts numeric degrees to radians
+function toRad(Value) {
+  return (Value * Math.PI) / 180;
+}
+
+//Future generated markers would be added into a marker group
+var markerGroup = L.layerGroup().addTo(mymap);
+
+// Filter data given the distance to the target's latitude and longitude, and visualize filtered markers on map
+function filterData(data, targetLat, targetLon, dist) {
+  markerGroup.clearLayers();
+  data.forEach(function(item) {
+    if (item.latitude && item.longitude) {
+      if (
+        calcCrow(item.latitude, item.longitude, targetLat, targetLon) <= dist
+      ) {
+        var marker = L.marker([item.latitude, item.longitude])
+          .addTo(markerGroup)
+          .addTo(mymap);
+      } else {
+        var marker = L.marker([item.latitude, item.longitude], {
+          opacity: 0.25
+        })
+          .addTo(markerGroup)
+          .addTo(mymap);
+      }
+      var day = moment(item.datetime);
+      marker
+        .bindPopup(
+          "<b>" +
+            item.type +
+            "</b>" +
+            "<br>" +
+            day.fromNow() +
+            "<br>" +
+            item.address
+        )
+        .openPopup();
+    }
+  });
+}
+
+// load the lasted data and filtered data
+async function load911Data(uri, targetLat, targetLon, dist) {
   var calls = await d3.json(uri);
-  console.log(calls);
-  renderMap(calls);
+  filterData(calls, targetLat, targetLon, dist);
+}
+
+// Add the circle that highlights the chosen area
+var circle = L.circle([DOWNTOWN_LAT, DOWNTOWN_LON], {
+  fillOpacity: 0
+}).addTo(mymap);
+function addCircle(centerLat, centerLon, rad) {
+  mymap.removeLayer(circle);
+  circle = L.circle([centerLat, centerLon], {
+    color: "red",
+    fillColor: "#f03",
+    fillOpacity: 0.3,
+    radius: rad
+  }).addTo(mymap);
 }
 
 var button_city = d3.select("#city");
 button_city.on("click", function() {
-  load911Data(seattle911API);
+  mymap.removeLayer(circle);
+  load911Data(seattle911API, DOWNTOWN_LAT, DOWNTOWN_LON, 20);
+});
+
+var button_uw = d3.select("#uw");
+button_uw.on("click", function() {
+  load911Data(seattle911API, RED_SQUARE_LAT, RED_SQUARE_LON, 3);
+  addCircle(RED_SQUARE_LAT, RED_SQUARE_LON, 1500);
+});
+
+var button_dt = d3.select("#downtown");
+button_dt.on("click", function() {
+  load911Data(seattle911API, DOWNTOWN_LAT, DOWNTOWN_LON, 2.5);
+  addCircle(DOWNTOWN_LAT, DOWNTOWN_LON, 1000);
+});
+
+var button_north = d3.select("#north");
+button_north.on("click", function() {
+  load911Data(seattle911API, NORTH_LAT, NORTH_LON, 4);
+  addCircle(NORTH_LAT, NORTH_LON, 2000);
+});
+
+var button_south = d3.select("#south");
+button_south.on("click", function() {
+  load911Data(seattle911API, SOUTH_LAT, SOUTH_LON, 5);
+  addCircle(SOUTH_LAT, SOUTH_LON, 2000);
 });
