@@ -4,7 +4,7 @@
 var svg = d3
   .select("#visContainer")
   .append("svg")
-  .attr("height", 300) //can adjust size as desired
+  .attr("height", 280) //can adjust size as desired
   .attr("width", 480);
 // .style("border", "1px solid gray"); //comment out to remove border
 
@@ -169,30 +169,35 @@ var button_city = d3.select("#city");
 button_city.on("click", function() {
   mymap.removeLayer(circle);
   load911Data(seattle911API, DOWNTOWN_LAT, DOWNTOWN_LON, 20);
+  mymap.setView([DOWNTOWN_LAT, DOWNTOWN_LON], 11.5);
 });
 
 var button_uw = d3.select("#uw");
 button_uw.on("click", function() {
   load911Data(seattle911API, RED_SQUARE_LAT, RED_SQUARE_LON, 3);
   addCircle(RED_SQUARE_LAT, RED_SQUARE_LON, 1500);
+  mymap.setView([RED_SQUARE_LAT, RED_SQUARE_LON], 11.5);
 });
 
 var button_dt = d3.select("#downtown");
 button_dt.on("click", function() {
   load911Data(seattle911API, DOWNTOWN_LAT, DOWNTOWN_LON, 2.5);
   addCircle(DOWNTOWN_LAT, DOWNTOWN_LON, 1000);
+  mymap.setView([DOWNTOWN_LAT, DOWNTOWN_LON], 11.5);
 });
 
 var button_north = d3.select("#north");
 button_north.on("click", function() {
   load911Data(seattle911API, NORTH_LAT, NORTH_LON, 4);
   addCircle(NORTH_LAT, NORTH_LON, 2000);
+  mymap.setView([NORTH_LAT, NORTH_LON], 11);
 });
 
 var button_south = d3.select("#south");
 button_south.on("click", function() {
   load911Data(seattle911API, SOUTH_LAT, SOUTH_LON, 5);
   addCircle(SOUTH_LAT, SOUTH_LON, 2000);
+  mymap.setView([SOUTH_LAT, SOUTH_LON], 11);
 });
 
 /* incident type analysis */
